@@ -18,10 +18,10 @@
 
 using namespace std;
 
-void writeFile(int *numbers, int N){
-    ofstream escribirNumeros(OUTFILE,ios::out);
+void writeFile(int *numbers, int N, string filename){
+    ofstream escribirNumeros(filename,ios::out);
     if( escribirNumeros.bad() ) {
-        cerr<<"Falló la creación del archivo "<<OUTFILE<<endl;
+        cerr<<"Falló la creación del archivo "<<filename<<endl;
         exit(EXIT_FAILURE);
     }
     for(int i=0; i<N;i++){
@@ -30,16 +30,17 @@ void writeFile(int *numbers, int N){
     escribirNumeros.close();
 }
 
-void readFile(int *numbers, int N){
-    ifstream leerNumeros(OUTFILE,ios::in);
+void readFile(int *numbers, int N, string filename){
+    ifstream leerNumeros(filename,ios::in);
     if( leerNumeros.bad() ) {
-        cerr<<"Falló la lectura del archivo "<<INFILE<<endl;
+        cerr<<"Falló la lectura del archivo "<<filename<<endl;
         exit(EXIT_FAILURE);
     }
     string ch;
+    int numero;
+    int i = 0;
     while(getline(leerNumeros,ch,',')) {
-        int i;
-        int numero = stoi(ch);
+        numero = stoi(ch);
         numbers[i] = numero;
         i++;
     }
@@ -48,12 +49,35 @@ void readFile(int *numbers, int N){
     
 }
 
+void par_qsort(int *data, int lo, int hi) //}, int (*compare)(const int *, const int*))
+{
+  if(lo > hi) return;
+  int l = lo;
+  int h = hi;
+  int p = data[(hi + lo)/2];
+
+  while(l <= h){
+    while((data[l] - p) < 0) l++;
+    while((data[h] - p) > 0) h--;
+    if(l<=h){
+      //swap
+      int tmp = data[l];
+      data[l] = data[h];
+      data[h] = tmp;
+      l++; h--;
+    }
+  }
+  //recursive call
+  par_qsort(data, lo, h);
+  par_qsort(data, l, hi);
+}
+
 int main(int argc, char * argv[]) {
 
     //Valores iniciales default
     int j;
     int N = 50;
-    srand(79);
+    srand(80);
 
     if(argc > 1) {
         N = strtol(argv[1], NULL, 10);
@@ -65,15 +89,19 @@ int main(int argc, char * argv[]) {
         x[j] = rand()%(N)+1;
     }
     // ESCRIBIR EN ARCHIVO
-    writeFile(x, N);
+    writeFile(x, N, OUTFILE);
     delete x;
     // LEER ARCHIVO
-    readFile(y, N);
+    readFile(y, N, OUTFILE);
 
     for (j=0; j<N; j++){
         cout<<y[j]<<endl;
     }
+    
 
+    par_qsort(y, 0, N-1);
+
+    writeFile(y, N, INFILE);
     delete y;
 
     return 0;
