@@ -77,14 +77,13 @@ void qsort(int *data, int lo, int hi){
         }
     }
 //  recursive call
-#pragma omp parallel sections num_threads(4)
+#pragma omp parallel sections num_threads(5)
 {
     #pragma omp section
         qsort(data, lo, h);
     #pragma omp section
         qsort(data, l, hi);
-    }
-
+}
 }
 
 int main(int argc, char * argv[]) {
@@ -103,7 +102,9 @@ int main(int argc, char * argv[]) {
     for (j=0; j<N; j++){
 //      generate random numbers from 1 to N
         x[j] = 1 + (rand() % N);
+        cout << x[j] << "J: "<< j <<" ";
     }
+    cout << "N: " << N << endl;
 
 //  write into the file
     writeFile(x, N, OUTFILE);
@@ -114,7 +115,14 @@ int main(int argc, char * argv[]) {
     readFile(y, OUTFILE);
 
 //  order the numbers
+    double first_time = omp_get_wtime();    
     qsort(y, 0, N-1);
+    double last_time = omp_get_wtime();
+    double final_time = last_time - first_time;
+    ofstream file("timeParallel.txt", ios::out);
+    file << final_time;
+    file.close();
+    cout << "Time: " << final_time << endl;
 //  write the ordered numbers
     writeFile(y, N, INFILE);
     delete[] y;
