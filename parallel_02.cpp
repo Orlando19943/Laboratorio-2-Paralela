@@ -16,7 +16,7 @@
 
 #define OUTFILE "unordered.csv"
 #define INFILE "ordered.csv"
-#define THREADS 8
+#define THREADS 10
 
 using namespace std;
 
@@ -89,8 +89,13 @@ void qsort(int *data, int lo, int hi){
         }
     }
 //  recursive call
-    qsort(data, lo, h);
-    qsort(data, l, hi);
+#pragma omp parallel sections
+    {
+        #pragma omp section 
+            qsort(data, lo, h);
+        #pragma omp section
+            qsort(data, l, hi); 
+    }
 }
 
 int main(int argc, char * argv[]) {
@@ -114,7 +119,9 @@ int main(int argc, char * argv[]) {
 
 //  order the numbers
     start = omp_get_wtime();
+
     qsort(y, 0, N-1);
+
     end = omp_get_wtime();
 
     ofstream file("time.txt", ios::app);

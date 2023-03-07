@@ -1,7 +1,3 @@
-//
-// Created by Zaray Corado on 3/4/2023.
-//
-
 /*
 * Computación Paralela y Distribuida
 * Laboratorio 2 - Paralelización de QuickSort
@@ -10,20 +6,36 @@
 *   - Diana Zaray Corado #191025
 */
 
-#include <unistd.h>     //std lib
+#include <unistd.h>     
 #include <iostream>
 #include <cmath>
-#include <fstream>      //fstream, ofstream, ifstream
-#include <string>       //string
+#include <fstream>      
+#include <string>       
 #include <vector>
 #include <omp.h>
 
-#define OUTFILE "numeros_desordenados.csv"
-#define INFILE "numeros_ordenados.csv"
+#define OUTFILE "unordered.csv"
+#define INFILE "ordered.csv"
+#define THREADS 2
 
 using namespace std;
 
-void writeFile(int *numbers, int N, const string& filename){
+void generateRandom(int N, const string& filename){
+    ofstream file(filename, ios::out);
+
+    if(file.bad()) {
+        cerr<<"Fail to create the file "<<filename<<endl;
+        exit(EXIT_FAILURE);
+    }
+
+    for(int i=0; i<N; i++){
+        file<<1 + (rand() % N)<<",";
+    }
+
+    file.close();
+}
+
+void write(int* numbers, int N, const string& filename){
     ofstream file(filename, ios::out);
 
     if(file.bad()) {
@@ -38,7 +50,7 @@ void writeFile(int *numbers, int N, const string& filename){
     file.close();
 }
 
-void readFile(int *numbers, const string& filename){
+void read(int *numbers, const string& filename){
     ifstream read(filename, ios::in);
 
     if(read.bad()) {
@@ -77,21 +89,22 @@ void qsort(int *data, int lo, int hi){
         }
     }
 //  recursive call
-#pragma omp parallel sections num_threads(5)
-{
-    #pragma omp section
-        qsort(data, lo, h);
-    #pragma omp section
-        qsort(data, l, hi);
-}
+// #pragma omp sections
+    // {
+        #pragma omp task 
+            qsort(data, lo, h);
+        #pragma omp task
+            qsort(data, l, hi); 
+    // }
 }
 
 int main(int argc, char * argv[]) {
 
 //  initial default values
-    int j, N=50;
-    int *x = new int[N];
+    int N=1'000'000;
     int *y = new int[N];
+    double start, end;
+
 //  random variables
     srand(80);
 
@@ -99,32 +112,26 @@ int main(int argc, char * argv[]) {
         N = strtol(argv[1], nullptr, 10);
     }
 
-    for (j=0; j<N; j++){
-//      generate random numbers from 1 to N
-        x[j] = 1 + (rand() % N);
-        cout << x[j] << "J: "<< j <<" ";
-    }
-    cout << "N: " << N << endl;
-
 //  write into the file
-    writeFile(x, N, OUTFILE);
-//  memory free
-    delete[] x;
-
+    generateRandom(N, OUTFILE);
 //  read the numbers from the file
-    readFile(y, OUTFILE);
+    read(y, OUTFILE);
 
 //  order the numbers
-    double first_time = omp_get_wtime();    
+    start = omp_get_wtime();
+
+    #pragma omp parallel num_threads(THREADS)
+    #pragma omp single
     qsort(y, 0, N-1);
-    double last_time = omp_get_wtime();
-    double final_time = last_time - first_time;
-    ofstream file("timeParallel.txt", ios::out);
-    file << final_time;
+
+    end = omp_get_wtime();
+
+    ofstream file("time.txt", ios::app);
+    file << end - start << endl;
     file.close();
-    cout << "Time: " << final_time << endl;
+
 //  write the ordered numbers
-    writeFile(y, N, INFILE);
+    write(y, N, INFILE);
     delete[] y;
 
     return 0;
